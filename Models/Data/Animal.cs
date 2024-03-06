@@ -14,4 +14,9 @@ public class Animal
     public required Sex Sex {get; set;}
     public DateTime? DateOfBirth {get; set;}
     public required DateTime DateOfAcquisition {get;set;}
+    public required int EnclosureId {get; set;}
+
+    [ForeignKey("EnclosureId")]
+    // [InverseProperty("Enclosures")]
+    public Enclosure Enclosure = null!;
 }

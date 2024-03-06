@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ZooManagement.Enums;
 using ZooManagement.Models.Data;
-using ZooManagement.Models.Requests;
 
 namespace ZooManagement;
 
@@ -9,6 +8,7 @@ public class Zoo : DbContext
 {
     public DbSet<Animal> Animals {get; set;} = null!;
     public DbSet<Species> Species {get; set;} = null!;
+    public DbSet<Enclosure> Enclosures {get; set;} = null!; 
 
 protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -16,44 +16,36 @@ protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     }
 protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var lion = new Species 
+        var enclosuresDict = new Dictionary<EnclosureTypes, int>()
         {
-            Id = -1,
-            Name = "lion",
-            Classification = Classification.Mammal
+            {EnclosureTypes.Giraffe, 6},
+            {EnclosureTypes.Aviary, 50},
+            {EnclosureTypes.Reptile, 40},
+            {EnclosureTypes.Hippo, 10},
+            {EnclosureTypes.Lion, 10}
         };
 
-        modelBuilder.Entity<Species>().HasData(lion);
+        var enclosureId = 1;
+        foreach (var e in enclosuresDict){
+            var newEnclosure = new Enclosure
+            {
+                Id = enclosureId,
+                Type = e.Key,
+                Capacity = e.Value,
+            };
+            modelBuilder.Entity<Enclosure>().HasData(newEnclosure);
+            enclosureId++;
+        }
 
-        var simba = new Animal
+        var species = new Dictionary<string, Classification>()
         {
-            Id = -1,
-            Name = "simba",
-            SpeciesId = -1,
-            Sex = Sex.Male,
-            DateOfBirth = new DateTime(2000, 1, 1).ToUniversalTime(),
-            DateOfAcquisition = new DateTime(2000, 1, 1).ToUniversalTime(),
-        };
-
-        var nala = new Animal{
-            Id = -2,
-            Name = "nala",
-            SpeciesId = -1,
-            Sex = Sex.Female,
-            DateOfBirth = new DateTime(1997, 9, 10).ToUniversalTime(),
-            DateOfAcquisition = new DateTime(2001, 2, 3).ToUniversalTime(),
-        };
-        modelBuilder.Entity<Animal>().HasData(simba, nala);
-
-        var species = new Dictionary<string, Classification>(){
+            {"lion", Classification.Mammal},
             {"elephant", Classification.Mammal},
             {"zebra", Classification.Mammal},
             {"snake", Classification.Reptile},
             {"giraffe", Classification.Mammal},
-            {"spider", Classification.Insect},
             {"hippo", Classification.Mammal},
             {"parrot", Classification.Bird},
-            {"goldfish", Classification.Fish}
         };
         var speciesId = 1;
         foreach (var s in species){
@@ -72,11 +64,6 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             "Spot", "Pooh", "Piglet", "Kanga", "Peter", "Tabatha", "Winston", "Daffy", "Garfield", "Mickey", "Snoopy"
         };
 
-        var arrSpeciesId = new[]
-            {
-                -1, 1, 2, 3, 4, 5, 6, 7
-            };
-        
         var values = Enum.GetValues(typeof(Sex));
         var random = new Random();
 
@@ -84,15 +71,15 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             new Animal{
                 Id = index,
                 Name = names[Random.Shared.Next(names.Length)],                
-                Sex = (Sex)values.GetValue(random.Next(values.Length)),
+                Sex = (Sex)new Random().Next(Enum.GetValues(typeof(Sex)). Length),
                 DateOfAcquisition = DateTime.Now.ToUniversalTime(),
                 DateOfBirth = DateTime.Now.ToUniversalTime(),
-                SpeciesId = arrSpeciesId[Random.Shared.Next(arrSpeciesId.Length)],
+                SpeciesId = Random.Shared.Next(1, 7),
+                EnclosureId = Random.Shared.Next(1, 5),
             }).ToArray();
-
         foreach (var animal in newAnimals)
         {
             modelBuilder.Entity<Animal>().HasData(animal);
-        }    
+        }   
     }
 }
