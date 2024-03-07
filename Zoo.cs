@@ -16,6 +16,7 @@ protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     }
 protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+
         var enclosuresDict = new Dictionary<EnclosureTypes, int>()
         {
             {EnclosureTypes.Giraffe, 6},
@@ -25,7 +26,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             {EnclosureTypes.Lion, 10}
         };
 
-        var enclosureId = 1;
+        var enclosureId = -1;
         foreach (var e in enclosuresDict){
             var newEnclosure = new Enclosure
             {
@@ -34,7 +35,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
                 Capacity = e.Value,
             };
             modelBuilder.Entity<Enclosure>().HasData(newEnclosure);
-            enclosureId++;
+            enclosureId--;
         }
 
         var species = new Dictionary<string, Classification>()
@@ -47,7 +48,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
             {"hippo", Classification.Mammal},
             {"parrot", Classification.Bird},
         };
-        var speciesId = 1;
+        var speciesId = -1;
         foreach (var s in species){
             var newSpecies = new Species
             {
@@ -56,7 +57,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
                 Classification = s.Value,
             };
             modelBuilder.Entity<Species>().HasData(newSpecies);
-            speciesId++;
+            speciesId--;
         }
         
         var names = new[]
@@ -65,17 +66,16 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
         };
 
         var values = Enum.GetValues(typeof(Sex));
-        var random = new Random();
 
         var newAnimals = Enumerable.Range(1, 100).Select(index =>
             new Animal{
-                Id = index,
+                Id = -index,
                 Name = names[Random.Shared.Next(names.Length)],                
                 Sex = (Sex)new Random().Next(Enum.GetValues(typeof(Sex)). Length),
                 DateOfAcquisition = DateTime.Now.ToUniversalTime(),
                 DateOfBirth = DateTime.Now.ToUniversalTime(),
-                SpeciesId = Random.Shared.Next(1, 7),
-                EnclosureId = Random.Shared.Next(1, 5),
+                SpeciesId = Random.Shared.Next(-7, 0),
+                EnclosureId = Random.Shared.Next(-5, 0),
             }).ToArray();
         foreach (var animal in newAnimals)
         {
