@@ -17,6 +17,5 @@ public class Animal
     public required int EnclosureId {get; set;}
 
     [ForeignKey("EnclosureId")]
-    // [InverseProperty("Enclosures")]
-    public Enclosure Enclosure = null!;
+    public Enclosure Enclosure {get; set;} = null!;
 }

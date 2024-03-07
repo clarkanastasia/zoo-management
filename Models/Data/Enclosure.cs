@@ -7,8 +7,7 @@ public class Enclosure
 {
     public int Id {get; set;}
     public required EnclosureTypes Type {get; set;}
-    // [InverseProperty(nameof(Animal.Enclosure))]
-    public List<Animal> Animals {get; set;} = null!;
+    public List<Animal> Animals {get; } = [];
     public required int Capacity {get; set;}
     [NotMapped]
     public int Population => Animals.Count;
