@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using ZooManagement.Enums;
 using ZooManagement.Models.Data;
 using ZooManagement.Models.Requests;
 using ZooManagement.Models.Response;
-using ZooManagement.Enums;
 
 namespace ZooManagement.Controllers;
 
@@ -17,38 +18,90 @@ public class AnimalsController: ControllerBase
         _zoo = zoo;
     }
 
-    [HttpGet("{id}")]
-    public IActionResult GetById([FromRoute] int id)
+    [HttpGet("animal/{id}")]
+    public IActionResult GetAnimalById([FromRoute] int id)
     {
         var matchingAnimal = _zoo.Animals
+        .AsNoTracking()
         .Include(animal => animal.Species)
+        .Include(animal => animal.Enclosure)
         .SingleOrDefault(animal => animal.Id == id);
         if (matchingAnimal == null)
         {
-            return NotFound();
+            return NotFound(new ErrorMessage()
+            {
+                Error = $"Animal with id of {id} was not found"
+            });
         }
         return Ok(new AnimalResponse()
         {
             Name = matchingAnimal.Name,
-            SpeciesName = matchingAnimal.Species.Name,
-            Classification = matchingAnimal.Species.Classification.ToString(),
-            Sex = matchingAnimal.Sex.ToString(),
-            DateOfBirth = matchingAnimal.DateOfBirth,
-            DateOfAcquisition = matchingAnimal.DateOfAcquisition, 
+            Species = matchingAnimal.Species.Name,
+            Classification = matchingAnimal.Species.Classification.ToString().ToLower(),
+            Sex = matchingAnimal.Sex.ToString().ToLower(),
+            Enclosure = matchingAnimal.Enclosure.Type.ToString().ToLower(),
+            DateOfBirth = matchingAnimal.DateOfBirth != null? matchingAnimal.DateOfBirth.Value.ToString("dd/MM/yyyy") : "unknown",
+            DateOfAcquisition = matchingAnimal.DateOfAcquisition.ToString("dd/MM/yyy"), 
         });
     }
-    [HttpGet("list/species")]
-    public IActionResult ListSpecies()
+
+    [HttpGet("/enclosure/{id}")]
+    public IActionResult GetEnclosureById([FromRoute] int id)
+    {
+        var matchingEnclosure = _zoo.Enclosures
+        .AsNoTracking()
+        .Include(enclosure => enclosure.Animals)
+        .SingleOrDefault(enclosure => enclosure.Id == id);
+        if (matchingEnclosure == null)
+        {
+            return NotFound(new ErrorMessage
+            {
+                Error = $"Enclosure with id of {id} was not found"
+            });
+        }
+        var animalsResponse = new List<AnimalResponse>();
+
+        foreach(var animal in matchingEnclosure.Animals)
+        {
+            var idToFind = animal.Id;
+            var matchingAnimal = _zoo.Animals
+                                .Include(animal => animal.Species)
+                                .Include(animal => animal.Enclosure)
+                                .Single(animal => animal.Id == idToFind);
+
+            animalsResponse.Add(new AnimalResponse
+            {
+                Name = matchingAnimal.Name,
+                Species = matchingAnimal.Species.Name,
+                Classification = matchingAnimal.Species.Classification.ToString().ToLower(),
+                Sex = matchingAnimal.Sex.ToString().ToLower(),
+                Enclosure = matchingAnimal.Enclosure.Type.ToString().ToLower(),
+                DateOfBirth = matchingAnimal.DateOfBirth != null? matchingAnimal.DateOfBirth.Value.ToString("dd/MM/yyyy") : "unknown",
+                DateOfAcquisition = matchingAnimal.DateOfAcquisition.ToString("dd/MM/yyy"), 
+            });
+        }
+        return Ok(new EnclosureResponse()
+        {
+            Type = matchingEnclosure.Type.ToString(),
+            Capacity = matchingEnclosure.Capacity,
+            Population = matchingEnclosure.Population,
+            Animals = animalsResponse,
+        });
+    }
+    [HttpGet("listall/species")]
+    public IActionResult ListAllSpecies()
     {
         var allSpecies =_zoo.Species.Select(species => species.Name).ToArray();
         return Ok(allSpecies);
-    }
+    } 
 
-    [HttpGet("listall")]
-    public IActionResult ListAll([FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pagesize = 10, [FromQuery] int pagenum = 1)
+    [HttpGet("filter")]
+    public IActionResult FilterBy([FromQuery] string enclosure = "", [FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pageSize = 10, [FromQuery] int pageNum = 1)
     {     
-
-        var filteredData = _zoo.Animals.Include(animal => animal.Species).AsQueryable();
+        var filteredData = _zoo.Animals
+                            .Include(animal => animal.Species)
+                            .Include(animal => animal.Enclosure)
+                            .AsQueryable();
         
         if (!string.IsNullOrEmpty(species))
         {
@@ -57,7 +110,24 @@ public class AnimalsController: ControllerBase
 
         if (!string.IsNullOrEmpty(classification))
         {
-            filteredData = filteredData.ToList().Where(animal => animal.Species.Classification.ToString() == classification).AsQueryable();
+            if (Enum.TryParse<Classification>(classification, ignoreCase : true , out var intClassification))
+            {
+                filteredData = filteredData.Where(animal => animal.Species.Classification == intClassification).AsQueryable();
+            } else
+            {
+                filteredData = Enumerable.Empty<Animal>().AsQueryable();
+            }
+        }
+
+        if (!string.IsNullOrEmpty(enclosure))
+        {
+            if (Enum.TryParse<EnclosureTypes>(enclosure, ignoreCase : true , out var intEnclosure))
+            {
+            filteredData = filteredData.Where(animal => animal.Enclosure.Type == intEnclosure).AsQueryable();
+            } else
+            {
+                filteredData = Enumerable.Empty<Animal>().AsQueryable();
+            }
         }
         
         if(filteredData == null)
@@ -68,16 +138,16 @@ public class AnimalsController: ControllerBase
         filteredData = filteredData
                         .OrderBy(animal => animal.Name);
 
-        var totalPages = (int)Math.Ceiling((double)filteredData.Count() / pagesize);  
+        var totalPages = (int)Math.Ceiling((double)filteredData.Count() / pageSize);  
 
-        if (pagenum >totalPages)
+        if (pageNum >totalPages)
         {
-            pagenum = totalPages;
+            pageNum = Math.Max(1, totalPages);
         }
 
         var pagedData = filteredData
-                        .Skip((pagenum -1) * pagesize)
-                        .Take(pagesize)
+                        .Skip((pageNum -1) * pageSize)
+                        .Take(pageSize)
                         .ToList();            
 
         var animalsResponse = new List<AnimalResponse>();
@@ -86,11 +156,12 @@ public class AnimalsController: ControllerBase
             var animalResponse = new AnimalResponse()
             {
                 Name = animal.Name,
-                SpeciesName = animal.Species.Name,
-                Classification = animal.Species.Classification.ToString(),
-                Sex = animal.Sex.ToString(),
-                DateOfBirth = animal.DateOfBirth,
-                DateOfAcquisition = animal.DateOfAcquisition, 
+                Species = animal.Species.Name,
+                Classification = animal.Species.Classification.ToString().ToLower(),
+                Sex = animal.Sex.ToString().ToLower(),
+                Enclosure = animal.Enclosure.Type.ToString().ToLower(),
+                DateOfBirth = animal.DateOfBirth != null? animal.DateOfBirth.Value.ToString("dd/MM/yyyy") : "unknown",
+                DateOfAcquisition = animal.DateOfAcquisition.ToString("dd/MM/yyyy"), 
             };
             animalsResponse.Add(animalResponse);
         }
@@ -100,22 +171,58 @@ public class AnimalsController: ControllerBase
     [HttpPost]
     public IActionResult Add([FromBody] CreateAnimalRequest createAnimalRequest)
     {
-        if(_zoo.Species.Any(species => species.Id == createAnimalRequest.SpeciesId))
+        if(_zoo.Species.Any(species => species.Id == createAnimalRequest.SpeciesId) 
+            && _zoo.Enclosures.Any(enclosure => enclosure.Id == createAnimalRequest.EnclosureId))
         {
-            Console.WriteLine("creating new animal");
-            var newAnimal = _zoo.Animals.Add(new Animal
+            var requestedEnclosure =_zoo.Enclosures
+                                    .Include(enclosure => enclosure.Animals)
+                                    .Single(enclosure => enclosure.Id == createAnimalRequest.EnclosureId);
+
+            if(requestedEnclosure.Population < requestedEnclosure.Capacity)
             {
-                Name = createAnimalRequest.Name,
-                SpeciesId = createAnimalRequest.SpeciesId,
-                Sex = createAnimalRequest.Sex,
-                DateOfBirth = createAnimalRequest.DateOfBirth,
-                DateOfAcquisition = createAnimalRequest.DateOfAcquisition,
-            }).Entity;
-            _zoo.SaveChanges();
-            return Ok(newAnimal);  
+                Console.WriteLine($"Count: {requestedEnclosure.Population}, Capacity: {requestedEnclosure.Capacity}");
+
+                var newAnimal = _zoo.Animals.Add(new Animal
+                {
+                    Name = createAnimalRequest.Name,
+                    SpeciesId = createAnimalRequest.SpeciesId,
+                    EnclosureId = createAnimalRequest.EnclosureId, 
+                    Sex = createAnimalRequest.Sex,
+                    DateOfBirth = createAnimalRequest.DateOfBirth,
+                    DateOfAcquisition = createAnimalRequest.DateOfAcquisition,
+                }).Entity;
+                _zoo.SaveChanges();
+
+                var idToFind = newAnimal.Id;
+                var matchingAnimal = _zoo.Animals
+                                .Include(animal => animal.Species)
+                                .Include(animal => animal.Enclosure)
+                                .Single(animal => animal.Id == idToFind);
+
+                return Ok(new AnimalResponse()
+                {
+                    Name = matchingAnimal.Name,
+                    Species = matchingAnimal.Species.Name,
+                    Classification = matchingAnimal.Species.Classification.ToString().ToLower(),
+                    Sex = matchingAnimal.Sex.ToString().ToLower(),
+                    Enclosure = matchingAnimal.Enclosure.Type.ToString().ToLower(),
+                    DateOfBirth = matchingAnimal.DateOfBirth != null? matchingAnimal.DateOfBirth.Value.ToString("dd/MM/yyyy") : "unknown",
+                    DateOfAcquisition = matchingAnimal.DateOfAcquisition.ToString("dd/MM/yyyy"), 
+                });  
+                }
+            else
+            {
+                return Conflict(new ErrorMessage()
+                {
+                    Error = $"This {requestedEnclosure.Type} enclosure is already at capacity"
+                });
+            }
         } else
         {
-            return BadRequest();
+            return NotFound(new ErrorMessage()
+            {
+                Error = $"Species with id {createAnimalRequest.SpeciesId} or enclosure with {createAnimalRequest.EnclosureId} was not found"
+            });
         }
     }
 }
