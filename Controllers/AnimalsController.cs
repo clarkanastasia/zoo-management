@@ -34,7 +34,8 @@ public class AnimalsController: ControllerBase
             });
         }
         return Ok(new AnimalResponse()
-        {
+        {   
+            Id = matchingAnimal.Id,
             Name = matchingAnimal.Name,
             Species = matchingAnimal.Species.Name,
             Classification = matchingAnimal.Species.Classification.ToString().ToLower(),
@@ -71,6 +72,7 @@ public class AnimalsController: ControllerBase
 
             animalsResponse.Add(new AnimalResponse
             {
+                Id = matchingAnimal.Id,
                 Name = matchingAnimal.Name,
                 Species = matchingAnimal.Species.Name,
                 Classification = matchingAnimal.Species.Classification.ToString().ToLower(),
@@ -82,6 +84,7 @@ public class AnimalsController: ControllerBase
         }
         return Ok(new EnclosureResponse()
         {
+            Id = matchingEnclosure.Id,
             Type = matchingEnclosure.Type.ToString(),
             Capacity = matchingEnclosure.Capacity,
             Population = matchingEnclosure.Population,
@@ -155,6 +158,7 @@ public class AnimalsController: ControllerBase
         {
             var animalResponse = new AnimalResponse()
             {
+                Id = animal.Id,
                 Name = animal.Name,
                 Species = animal.Species.Name,
                 Classification = animal.Species.Classification.ToString().ToLower(),
@@ -201,6 +205,7 @@ public class AnimalsController: ControllerBase
 
                 return Ok(new AnimalResponse()
                 {
+                    Id = matchingAnimal.Id,
                     Name = matchingAnimal.Name,
                     Species = matchingAnimal.Species.Name,
                     Classification = matchingAnimal.Species.Classification.ToString().ToLower(),
