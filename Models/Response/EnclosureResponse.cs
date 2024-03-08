@@ -1,7 +1,8 @@
 namespace ZooManagement.Models.Response;
 
 public class EnclosureResponse
-{
+{   
+    public required int Id {get; set;}
     public required string Type { get; set; }
     public required int Population {get; set;}
     public required int Capacity {get;set;}
