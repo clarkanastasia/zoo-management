@@ -15,9 +15,8 @@ const NavBar: React.FC = () => {
                     <NavDropdown.Item href="/enclosure/-1">Giraffe</NavDropdown.Item>
                     <NavDropdown.Item href="/enclosure/-2">Aviary</NavDropdown.Item>
                     <NavDropdown.Item href="/enclosure/-3">Reptile</NavDropdown.Item>
-                    <NavDropdown.Item href="/enclosure/-4">Reptile</NavDropdown.Item>
-                    <NavDropdown.Item href="/enclosure/-5">Hippo</NavDropdown.Item>
-                    <NavDropdown.Item href="/enclosure/-6">Lion</NavDropdown.Item>
+                    <NavDropdown.Item href="/enclosure/-4">Hippo</NavDropdown.Item>
+                    <NavDropdown.Item href="/enclosure/-5">Lion</NavDropdown.Item>
                 </NavDropdown>
                 </Nav>
             </Navbar.Collapse>
