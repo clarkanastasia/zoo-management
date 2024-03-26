@@ -1,19 +1,28 @@
+import "../main.scss"
+import { Button } from "react-bootstrap"
+import { LinkContainer } from "react-router-bootstrap"
 
 const Home: React.FC = () => {
-
     return (
-        <div>
-        <h1>Welcome to Zoo Management</h1>
-        <p>Which enclosure would you like to visit</p>
-        <ul>
-            <li><a href="/enclosure/-1">Giraffe</a></li>
-            <li><a href="/enclosure/-2">Aviary</a></li>
-            <li><a href="/enclosure/-3">Reptile</a></li>
-            <li><a href="/enclosure/-4">Hippo</a></li>
-            <li><a href="/enclosure/-5">Lion</a></li>
-        </ul>
-        </div>
-    )
-    }
+        <div className="homePage">
+            <h1>Zoo Management System</h1>
+            <h2>Which enclosure would you like to see?</h2>
+            <LinkContainer to="/enclosure/-1">
+                <Button size="lg">Giraffe</Button>
+            </LinkContainer>
+            <LinkContainer to="/enclosure/-2">
+                <Button size="lg">Aviary</Button>
+            </LinkContainer>
+            <LinkContainer to="/enclosure/-3">
+                <Button size="lg">Reptile</Button>
+            </LinkContainer>
+            <LinkContainer to="/enclosure/-4">
+                <Button size="lg">Hippo</Button>
+            </LinkContainer>
+            <LinkContainer to="/enclosure/-5">
+                <Button size="lg">Lion</Button>
+            </LinkContainer>
+        </div> 
+    )}
 
 export default Home
