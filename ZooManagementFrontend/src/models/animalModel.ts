@@ -4,6 +4,7 @@ export interface animalModel {
     species: string;
     classification: string;
     sex: string;
+    enclosureId: number,
     enclosure: string;
     dateOfBirth?: string;
     dateOfAcquisition: string;
