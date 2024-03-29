@@ -93,12 +93,41 @@ public class AnimalsController: ControllerBase
             Animals = animalsResponse,
         });
     }
+
+    [HttpGet("listall/enclosures")]
+    public IActionResult ListAllEnclosures()
+    {
+        var enclosureValues = _zoo.Enclosures.Select(enclosure => enclosure.Type).ToArray();
+
+        var enclosureStrings = new string[enclosureValues.Length];
+
+        for (int i = 0; i <enclosureValues.Length; i++)
+        {
+                enclosureStrings[i] = Enum.GetName(typeof(EnclosureTypes), enclosureValues[i]);
+        }    
+        return Ok(enclosureStrings);
+    }
+
     [HttpGet("listall/species")]
     public IActionResult ListAllSpecies()
     {
         var allSpecies =_zoo.Species.Select(species => species.Name).ToArray();
         return Ok(allSpecies);
     } 
+
+    [HttpGet("listall/classifications")]
+    public IActionResult ListAllClassifications()
+    {
+        var classificationValues = _zoo.Species.Select(species => species.Classification).Distinct().ToArray();
+
+        var classificationStrings = new string[classificationValues.Length];
+
+        for (int i = 0; i <classificationValues.Length; i++)
+        {
+                classificationStrings[i] = Enum.GetName(typeof(Classification), classificationValues[i]);
+        }    
+        return Ok(classificationStrings);
+    }
 
     [HttpGet("filter")]
     public IActionResult FilterBy([FromQuery] string enclosure = "", [FromQuery] string species ="", [FromQuery] string classification ="", [FromQuery] int pageSize = 10, [FromQuery] int pageNum = 1)
@@ -172,7 +201,14 @@ public class AnimalsController: ControllerBase
             };
             animalsResponse.Add(animalResponse);
         }
-        return Ok(animalsResponse);
+        var pagedDateResponse = new PagedDataResponse
+        {
+            Result = animalsResponse,
+            CurrentPage = pageNum, 
+            ItemsPerPage = pageSize,
+            TotalPages = totalPages
+        };
+        return Ok(pagedDateResponse);
     }
 
     [HttpPost]
